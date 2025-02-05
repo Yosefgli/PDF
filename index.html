@@ -14,7 +14,7 @@
     
     <div id="scan" style="display:none;">
         <h2>צלם תמונת תעודה מזהה</h2>
-        <video id="video" autoplay></video>
+        <video id="video" autoplay playsinline></video>
         <button onclick="captureImage()">צלם</button>
         <canvas id="canvas" style="display:none;"></canvas>
         <button id="scanButton" onclick="processID()" style="display:none;">סרוק</button>
@@ -33,7 +33,7 @@
         }
         
         function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: true })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(stream => {
                     document.getElementById('video').srcObject = stream;
                 })
