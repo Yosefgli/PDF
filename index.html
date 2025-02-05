@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>סריקת תעודה מזהה</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
 </head>
 <body>
     <div id="home">
@@ -26,6 +25,8 @@
     </div>
     
     <script>
+        const GOOGLE_VISION_API_KEY = 'AIzaSyBol7VCxKeT-H0E3u2ht6-svd6TeHksl9A';
+        
         function goToScanPage() {
             document.getElementById('home').style.display = 'none';
             document.getElementById('scan').style.display = 'block';
@@ -52,16 +53,29 @@
         
         function processID() {
             const canvas = document.getElementById('canvas');
-            Tesseract.recognize(
-                canvas.toDataURL(),
-                'eng+heb',
-                {
-                    logger: m => console.log(m)
-                }
-            ).then(({ data: { text } }) => {
+            const imageData = canvas.toDataURL().replace(/^data:image\/\w+;base64,/, "");
+            
+            const requestBody = {
+                requests: [{
+                    image: { content: imageData },
+                    features: [{ type: "TEXT_DETECTION" }]
+                }]
+            };
+            
+            fetch(`https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const text = data.responses[0].fullTextAnnotation ? data.responses[0].fullTextAnnotation.text : "לא נמצא טקסט";
                 document.getElementById('scannedData').value = text;
                 document.getElementById('result').style.display = 'block';
-            });
+            })
+            .catch(error => console.error('Error:', error));
         }
         
         function sendWebhook() {
