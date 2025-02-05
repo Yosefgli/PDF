@@ -13,9 +13,11 @@
     </div>
     
     <div id="scan" style="display:none;">
-        <h2>העלה תמונת תעודה מזהה</h2>
-        <input type="file" id="idImage" accept="image/*">
-        <button onclick="processID()">סרוק</button>
+        <h2>צלם תמונת תעודה מזהה</h2>
+        <video id="video" autoplay></video>
+        <button onclick="captureImage()">צלם</button>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <button id="scanButton" onclick="processID()" style="display:none;">סרוק</button>
         <div id="result" style="display:none;">
             <h3>תוצאה</h3>
             <textarea id="scannedData"></textarea>
@@ -27,30 +29,39 @@
         function goToScanPage() {
             document.getElementById('home').style.display = 'none';
             document.getElementById('scan').style.display = 'block';
+            startCamera();
         }
-
+        
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    document.getElementById('video').srcObject = stream;
+                })
+                .catch(err => console.error("Error accessing camera: ", err));
+        }
+        
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            document.getElementById('scanButton').style.display = 'block';
+        }
+        
         function processID() {
-            const fileInput = document.getElementById('idImage');
-            if (fileInput.files.length === 0) {
-                alert('בחר תמונה');
-                return;
-            }
-            const image = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(event) {
-                Tesseract.recognize(
-                    event.target.result,
-                    'eng+heb',
-                    {
-                        logger: m => console.log(m)
-                    }
-                ).then(({ data: { text } }) => {
-                    document.getElementById('scannedData').value = text;
-                    document.getElementById('result').style.display = 'block';
-                });
-            };
-            reader.readAsDataURL(image);
+            const canvas = document.getElementById('canvas');
+            Tesseract.recognize(
+                canvas.toDataURL(),
+                'eng+heb',
+                {
+                    logger: m => console.log(m)
+                }
+            ).then(({ data: { text } }) => {
+                document.getElementById('scannedData').value = text;
+                document.getElementById('result').style.display = 'block';
+            });
         }
         
         function sendWebhook() {
