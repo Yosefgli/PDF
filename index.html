@@ -1,34 +1,71 @@
 <!DOCTYPE html>
-<html dir="rtl">
+<html lang="he">
 <head>
     <meta charset="UTF-8">
-    <title>טבלה דינמית</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: right;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סריקת תעודה מזהה</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js"></script>
 </head>
 <body>
-    <table id="mainTable">
-        <thead>
-            <tr>
-                <th>עמודה 1</th>
-                <th>עמודה 2</th>
-                <!-- הוסף עמודות נוספות לפי הצורך -->
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-    </table>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="script.js"></script>
+    <div id="home">
+        <h1>ברוך הבא</h1>
+        <button onclick="goToScanPage()">סרוק תעודה מזהה</button>
+    </div>
+    
+    <div id="scan" style="display:none;">
+        <h2>העלה תמונת תעודה מזהה</h2>
+        <input type="file" id="idImage" accept="image/*">
+        <button onclick="processID()">סרוק</button>
+        <div id="result" style="display:none;">
+            <h3>תוצאה</h3>
+            <textarea id="scannedData"></textarea>
+            <button onclick="sendWebhook()">אישור ושליחה</button>
+        </div>
+    </div>
+    
+    <script>
+        function goToScanPage() {
+            document.getElementById('home').style.display = 'none';
+            document.getElementById('scan').style.display = 'block';
+        }
+
+        function processID() {
+            const fileInput = document.getElementById('idImage');
+            if (fileInput.files.length === 0) {
+                alert('בחר תמונה');
+                return;
+            }
+            const image = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                Tesseract.recognize(
+                    event.target.result,
+                    'eng+heb',
+                    {
+                        logger: m => console.log(m)
+                    }
+                ).then(({ data: { text } }) => {
+                    document.getElementById('scannedData').value = text;
+                    document.getElementById('result').style.display = 'block';
+                });
+            };
+            reader.readAsDataURL(image);
+        }
+        
+        function sendWebhook() {
+            const data = {
+                text: document.getElementById('scannedData').value
+            };
+            fetch('https://your-webhook-url.com', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(response => alert('נתונים נשלחו!'))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 </html>
