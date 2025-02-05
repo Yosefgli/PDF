@@ -19,7 +19,14 @@
         <button id="scanButton" onclick="processID()" style="display:none;">סרוק</button>
         <div id="result" style="display:none;">
             <h3>תוצאה</h3>
-            <textarea id="scannedData"></textarea>
+            <label>Фамилия (שם משפחה):</label>
+            <input type="text" id="lastname">
+            <label>Имя (שם פרטי):</label>
+            <input type="text" id="firstname">
+            <label>Дата рождения (תאריך לידה):</label>
+            <input type="text" id="dob">
+            <label>ИИН (מספר מזהה):</label>
+            <input type="text" id="iin">
             <button onclick="sendWebhook()">אישור ושליחה</button>
         </div>
     </div>
@@ -71,18 +78,36 @@
             })
             .then(response => response.json())
             .then(data => {
-                const text = data.responses[0].fullTextAnnotation ? data.responses[0].fullTextAnnotation.text : "לא נמצא טקסט";
-                document.getElementById('scannedData').value = text;
+                const text = data.responses[0].fullTextAnnotation ? data.responses[0].fullTextAnnotation.text : "";
+                
+                document.getElementById('lastname').value = extractData(text, 'Фамилия');
+                document.getElementById('firstname').value = extractData(text, 'Имя');
+                document.getElementById('dob').value = extractData(text, 'Дата рождения');
+                document.getElementById('iin').value = extractData(text, 'ИИН', true);
+                
                 document.getElementById('result').style.display = 'block';
             })
             .catch(error => console.error('Error:', error));
         }
         
+        function extractData(text, label, isNumber = false) {
+            const lines = text.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes(label)) {
+                    return isNumber ? lines[i].replace(label, '').trim() : (lines[i + 1] || '').trim();
+                }
+            }
+            return '';
+        }
+        
         function sendWebhook() {
             const data = {
-                text: document.getElementById('scannedData').value
+                lastname: document.getElementById('lastname').value,
+                firstname: document.getElementById('firstname').value,
+                dob: document.getElementById('dob').value,
+                iin: document.getElementById('iin').value
             };
-            fetch('https://your-webhook-url.com', {
+            fetch('https://hook.integrator.boost.space/6596she29xov3falmux3q83qemwkb1tl', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
