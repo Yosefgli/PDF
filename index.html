@@ -80,24 +80,19 @@
             .then(data => {
                 const text = data.responses[0].fullTextAnnotation ? data.responses[0].fullTextAnnotation.text : "";
                 
-                document.getElementById('lastname').value = extractData(text, 'Фамилия');
-                document.getElementById('firstname').value = extractData(text, 'Имя');
-                document.getElementById('dob').value = extractData(text, 'Дата рождения');
-                document.getElementById('iin').value = extractData(text, 'ИИН', true);
+                document.getElementById('lastname').value = extractData(text, /Фамилия[:\s]*(\S+)/);
+                document.getElementById('firstname').value = extractData(text, /Имя[:\s]*(\S+)/);
+                document.getElementById('dob').value = extractData(text, /Дата рождения[:\s]*(\d{2}\.\d{2}\.\d{4})/);
+                document.getElementById('iin').value = extractData(text, /ИИН[:\s]*(\d{12})/);
                 
                 document.getElementById('result').style.display = 'block';
             })
             .catch(error => console.error('Error:', error));
         }
         
-        function extractData(text, label, isNumber = false) {
-            const lines = text.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].includes(label)) {
-                    return isNumber ? lines[i].replace(label, '').trim() : (lines[i + 1] || '').trim();
-                }
-            }
-            return '';
+        function extractData(text, regex) {
+            const match = text.match(regex);
+            return match ? match[1] : '';
         }
         
         function sendWebhook() {
